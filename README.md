@@ -36,3 +36,74 @@ Algorithms such as gradient descent, Newton’s method, and line search routines
 
 ### Convergence and stability analysis  
 Utilities for evaluating numerical error, step size sensitivity, and solver stability. These tools help diagnose and compare algorithmic performance.
+
+---
+
+## Validation
+
+Every module is tested against known analytical solutions, statistical properties, or theoretical bounds. Run the full suite with:
+
+```bash
+PYTHONPATH=src python -m pytest tests/ -v
+```
+
+### ODE solvers — accuracy and convergence
+
+| Solver | Test problem | Metric | Result |
+|--------|-------------|--------|--------|
+| Euler | y' = −y, y(0) = 1 | max error at t = 1, h = 0.001 | < 2 × 10⁻³ |
+| RK4 | y' = −y, y(0) = 1 | max error at t = 2, h = 0.1 | < 10⁻⁶ |
+| RK4 | Harmonic oscillator y'' + y = 0 | period return error | < 10⁻⁵ |
+| Adaptive (RKF45) | y' = −50y (mildly stiff) | error at t = 0.5 | < 10⁻⁴ |
+
+### ODE solvers — stability and convergence order
+
+Stiff test equation y' = −25y solved with step sizes h ∈ {0.1, 0.05, 0.01}:
+
+| Criterion | Expected | Verified |
+|-----------|----------|----------|
+| Euler unstable at h = 0.1 | \|1 + hλ\| = 1.5 > 1 | divergent solution |
+| Euler stable at h = 0.01 | \|1 + hλ\| = 0.75 < 1 | error < 0.01 |
+| RK4 stable at all tested h | \|R(hλ)\| < 1 for h ≤ 0.1 | bounded error |
+| Euler convergence rate | O(h) — slope ≈ 1 | measured 0.9–1.2 |
+| RK4 convergence rate | O(h⁴) — slope ≈ 4 | measured 3.8–4.2 |
+
+### Monte Carlo simulation
+
+| Test | Reference | Tolerance |
+|------|-----------|-----------|
+| European put-call parity | C − P = S₀ − Ke⁻ʳᵀ | < 0.50 (500k paths) |
+| Deep ITM call | intrinsic value floor | > 95% of intrinsic |
+| Asian call < European call | Jensen's inequality | confirmed |
+| Confidence interval coverage | 95% CI contains price | confirmed |
+
+### Stochastic processes
+
+| Process | Property | Method |
+|---------|----------|--------|
+| Brownian motion | Var[W(T)] = T | 5 000 paths, atol 0.15 |
+| Geometric Brownian motion | E[S(T)] = S₀eᵘᵀ | 50 000 paths, rtol 2% |
+| Poisson process | E[N(T)] = λT | 10 000 paths, atol 1.0 |
+| Markov chain | πP = π (stationary dist.) | exact to 10⁻¹⁰ |
+
+### Numerical optimization
+
+| Algorithm | Test function | Convergence | Accuracy |
+|-----------|--------------|-------------|----------|
+| Gradient descent | ½\|x\|² | ✓ | atol 10⁻⁶ |
+| Gradient descent + line search | ½\|x\|² | ✓ | atol 10⁻⁶ |
+| Momentum SGD | ½\|x\|² | ✓ | atol 10⁻⁵ |
+| Newton (exact Hessian) | ½\|x\|² | 1 iteration | atol 10⁻¹⁰ |
+| Newton (FD Hessian) | Rosenbrock | ✓ | atol 10⁻⁴ |
+| Newton root-finding | x² + y² = 1, x = y | ✓ | atol 10⁻¹⁰ |
+
+### Test map
+
+```
+tests/
+├── test_ode.py                    # Euler, RK4, adaptive solver accuracy
+├── test_convergence_stability.py  # Stability limits, convergence order
+├── test_monte_carlo.py            # Option pricing, random walks
+├── test_stochastic.py             # Brownian, Poisson, Markov chains
+└── test_optimization.py           # Gradient descent, Newton methods
+```
